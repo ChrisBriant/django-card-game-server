@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Test</title>
+  <label for="send-message">Send Message</label>
+  <input id="send-message" type="text" disabled>
+  <button id="send-button" disabled>Send</button>
+</head>
+<body>
+  <script>
+    const loginData = {
+      username: "chinx",
+      password: "CandyChinx2089$"
+    };
+
+    //send message area
+    sendMessage = document.querySelector('#send-message');
+    sendButton = document.querySelector('#send-button');
+
+
+
+    fetch('http://localhost:8000/api/token/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(loginData)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+
+        sendButton.addEventListener('click',(evt) => {
+          const sendText = sendMessage.value;
+          console.log('Clikc', sendText);
+          websocket.send(JSON.stringify({ type: 'message' }));
+        });
+
+        console.log(data); // Handle the token here
+        //const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIxMDI2OTcxLCJpYXQiOjE3MjEwMTI1NzEsImp0aSI6IjhkMDMzNjkyOGQ5ZjQwM2ZhNTg3MmUzMTNkNGQxYzIyIiwidXNlcl9pZCI6Mn0.ZCYs9VYstbLfuU60DZTiYyMOugsLrNTqWPgIfqJpYhc';
+        //const websocket = new WebSocket('ws://127.0.0.1:8000/ws/cards-consumer/', ['token', data['access']]);
+        const websocket = new WebSocket('ws://127.0.0.1:8000/ws/cards-consumer/');
+
+        websocket.onopen = function(event) {
+          console.log('WebSocket connected');
+          websocket.send(JSON.stringify({ type: 'auth', token: data['access'] }));
+        };
+
+        websocket.onmessage = function(event) {
+          console.log('Message received:', event.data);
+          data =  JSON.parse(event.data)
+          if(data['type'] === 'auth' && data['status'] === 'ok') {
+            sendMessage.removeAttribute("disabled");
+            sendButton.removeAttribute("disabled");
+          } 
+        };
+
+        websocket.onclose = function(event) {
+          console.log('WebSocket closed');
+        };
+
+        websocket.onerror = function(error) {
+          console.error('WebSocket error:', error);
+        };
+
+
+      })
+      .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+      });
+
+
+
+
+
+  </script>
+</body>
+</html>
